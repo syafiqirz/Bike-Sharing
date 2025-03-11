@@ -151,7 +151,7 @@ def plot_monthly_analysis():
 # -------------------------------
 # Load Data
 # -------------------------------
-data = pd.read_csv("sales_data.csv")
+data = pd.read_csv("https://raw.githubusercontent.com/syafiqirz/Bike-Sharing/refs/heads/main/dashboard/sales_data.csv")
 data = load_data(data)
 today = pd.Timestamp("2013-01-01")
 
