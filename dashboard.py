@@ -86,65 +86,10 @@ def filter_timeframe(data, timeframe, today):
         return data.copy()
 
 # -------------------------------
-# Load Data
+# Fungsi untuk Analisis Tren Bulanan
 # -------------------------------
-data = load_data("sales_data.csv")
-today = pd.Timestamp("2013-01-01")
-
-# -------------------------------
-# Sidebar: Filter dan Pilihan Analisis
-# -------------------------------
-st.sidebar.header("Filter Data")
-analysis_option = st.sidebar.radio("Pilih Analisis", ("Overview Data", "Analisis per Jam", "Tren Bulanan"))
-
-# -------------------------------
-# Header
-# -------------------------------
-st.header('Dashboar Penyewaan Sepeda :sparkles:')
-st.caption("Last updated: 1 January 2013")
-st.subheader('Total Penyewaan')
-
-col1, col2 = st.columns(2)
-
-with col1:
-    total_sales = data["count"].sum()
-    st.metric("Total Sales", value=total_sales)
-
-with col2:
-    last_30_days = data[data["dateday"] >= today - pd.DateOffset(days=30)]["count"].mean()
-    prev_30_days = data[(data["dateday"] >= today - pd.DateOffset(days=60)) & (data["dateday"] < today - pd.DateOffset(days=30))]["count"].mean()
-    delta_percentage = ((last_30_days - prev_30_days) / prev_30_days) * 100
-    st.metric("Average Sales in Last 30 Days", value=f"{last_30_days:.0f}", delta=f"{delta_percentage:.2f}%")
-
-# -------------------------------
-# Overview Data
-# -------------------------------
-if analysis_option == "Overview Data":
-    st.header("Overview Data")
-    tab1, tab2, tab3 = st.tabs(["Tren Penjualan", "Registered Users", "Casual Users"])
-    
-    with tab1:
-        show_stacked = st.checkbox("Lihat proporsi pengguna")
-        plot_overview_graph(data, show_stacked)
-    
-    with tab2:
-        plot_user_graph(data, "registered", "Tren Pengguna Registered Perbulan", "blue")
-    
-    with tab3:
-        plot_user_graph(data, "casual", "Tren Pengguna Casual Perbulan", "red")
-
-# -------------------------------
-# Analisis per Jam dengan Opsi Proporsi User
-# -------------------------------
-if analysis_option == "Analisis per Jam":
-    timeframe = st.sidebar.selectbox("Pilih Rentang Waktu", ["Keseluruhan", "1 Tahun Terakhir", "6 Bulan Terakhir", "1 Bulan Terakhir", "1 Minggu Terakhir", "1 Hari Terakhir"])
-    plot_hourly_analysis(data, timeframe, today)
-    
-# Tren Bulanan dengan Opsi Custom
-if analysis_option == "Tren Bulanan":
+def plot_monthly_analysis():
     st.header("Tren Penyewaan Sepeda")
-    timeframe = st.sidebar.selectbox("Pilih Rentang Waktu", ["Keseluruhan", "1 Tahun Terakhir", "6 Bulan Terakhir", "3 Bulan Terakhir", "1 Bulan Terakhir", "1 Minggu Terakhir", "3 Hari Terakhir", "Custom"])
-    
     today = pd.Timestamp("2013-01-01")
     
     if timeframe == "Custom":
@@ -203,3 +148,68 @@ if analysis_option == "Tren Bulanan":
     ax.set_ylabel("Total Penyewaan")
     plt.xticks(rotation=45)
     st.pyplot(fig)
+    
+# -------------------------------
+# Load Data
+# -------------------------------
+data = load_data("sales_data.csv")
+today = pd.Timestamp("2013-01-01")
+
+# -------------------------------
+# Sidebar: Filter dan Pilihan Analisis
+# -------------------------------
+st.sidebar.header("Filter Data")
+analysis_option = st.sidebar.radio("Pilih Analisis", ("Overview Data", "Analisis per Jam", "Tren Bulanan"))
+
+# -------------------------------
+# Header
+# -------------------------------
+st.header('Dashboar Penyewaan Sepeda :sparkles:')
+st.caption("Last updated: 1 January 2013")
+st.subheader('Total Penyewaan')
+
+col1, col2 = st.columns(2)
+
+with col1:
+    total_sales = data["count"].sum()
+    st.metric("Total Sales", value=total_sales)
+
+with col2:
+    last_30_days = data[data["dateday"] >= today - pd.DateOffset(days=30)]["count"].mean()
+    prev_30_days = data[(data["dateday"] >= today - pd.DateOffset(days=60)) & (data["dateday"] < today - pd.DateOffset(days=30))]["count"].mean()
+    delta_percentage = ((last_30_days - prev_30_days) / prev_30_days) * 100
+    st.metric("Average Sales in Last 30 Days", value=f"{last_30_days:.0f}", delta=f"{delta_percentage:.2f}%")
+
+# -------------------------------
+# Overview Data
+# -------------------------------
+if analysis_option == "Overview Data":
+    st.header("Overview Data")
+    tab1, tab2, tab3 = st.tabs(["Tren Penjualan", "Registered Users", "Casual Users"])
+    
+    with tab1:
+        show_stacked = st.checkbox("Lihat proporsi pengguna")
+        plot_overview_graph(data, show_stacked)
+    
+    with tab2:
+        plot_user_graph(data, "registered", "Tren Pengguna Registered Perbulan", "blue")
+    
+    with tab3:
+        plot_user_graph(data, "casual", "Tren Pengguna Casual Perbulan", "red")
+
+# -------------------------------
+# Analisis per Jam dengan Opsi Proporsi User
+# -------------------------------
+if analysis_option == "Analisis per Jam":
+    timeframe = st.sidebar.selectbox("Pilih Rentang Waktu", ["Keseluruhan", "1 Tahun Terakhir", "6 Bulan Terakhir", "1 Bulan Terakhir", "1 Minggu Terakhir", "1 Hari Terakhir"])
+    plot_hourly_analysis(data, timeframe, today)
+    
+# -------------------------------
+# Analisis Tren Bulanan
+# -------------------------------
+if analysis_option == "Tren Bulanan":
+    timeframe = st.sidebar.selectbox("Pilih Rentang Waktu", ["Keseluruhan", "1 Tahun Terakhir", "6 Bulan Terakhir", "3 Bulan Terakhir", "1 Bulan Terakhir", "1 Minggu Terakhir", "3 Hari Terakhir", "Custom"])
+    plot_monthly_analysis()
+
+st.markdown("---")
+st.caption("**Developed by Muhammad Syafiq Irzaky | Contact: syafiqirzaky@gmail.com | GitHub: (https://github.com/syafiqirz)**")
