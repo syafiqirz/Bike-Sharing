@@ -7,8 +7,7 @@ import seaborn as sns
 # -------------------------------
 # Fungsi untuk Memuat dan Memproses Data
 # -------------------------------
-def load_data(file_path):
-    data = pd.read_csv(file_path)
+def load_data(data):
     data['dateday'] = pd.to_datetime(data['dateday'])
     data['month_year'] = data['dateday'].dt.strftime("%b %Y")
     data['month_year_sort'] = data['dateday'].dt.to_period("M").astype(str)
@@ -152,7 +151,8 @@ def plot_monthly_analysis():
 # -------------------------------
 # Load Data
 # -------------------------------
-data = load_data("./sales_data.csv")
+data = pd.read_csv("sales_data.csv")
+data = load_data(data)
 today = pd.Timestamp("2013-01-01")
 
 # -------------------------------
