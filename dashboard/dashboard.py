@@ -84,6 +84,64 @@ def filter_timeframe(data, timeframe, today):
     else:
         return data.copy()
 
+def peak_season():
+    data['dateday'] = pd.to_datetime(data['dateday'])
+    order = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    monthly_sales_df = data.groupby(by='month').agg({
+        "count":"sum"
+    }).reset_index()
+    monthly_sales_df['month'] = pd.Categorical(monthly_sales_df['month'], categories=order, ordered=True)
+    monthly_sales_df = monthly_sales_df.sort_values('month').reset_index(drop=True)
+
+    monthly_sales_df['pct_change'] = monthly_sales_df['count'].pct_change() * 100
+
+    spike_threshold = 20  
+    drop_threshold = -15   
+    # Identifikasi bulan dengan lonjakan signifikan
+    spike_months = monthly_sales_df[monthly_sales_df['pct_change'] >= spike_threshold]['month'].tolist()
+    drop_months = monthly_sales_df[monthly_sales_df['pct_change'] <= drop_threshold]['month'].tolist()
+
+    # Tentukan awal dan akhir peak season
+    if spike_months and drop_months:
+        start_peak = spike_months[0]  # Bulan pertama dengan kenaikan signifikan
+        end_peak = drop_months[0]     # Bulan pertama dengan penurunan signifikan setelah puncak
+        
+        # Ambil semua bulan antara start_peak dan end_peak
+        peak_season_months = monthly_sales_df[(monthly_sales_df['month'] >= start_peak) & (monthly_sales_df['month'] <= end_peak)]['month'].tolist()
+        
+        pct_start_peak = monthly_sales_df.loc[monthly_sales_df['month'] == peak_season_months[0], 'pct_change'].values[0]
+        pct_end_peak = monthly_sales_df.loc[monthly_sales_df['month'] == peak_season_months[-1], 'pct_change'].values[0]
+        
+        peak_dict = {
+            "start_month":start_peak,
+            "end_month":end_peak,
+            "start_pct":pct_start_peak,
+            "end_pct" : pct_end_peak
+        }
+    else:
+        peak_season_months = []
+        peak_dict = [] 
+    
+    return monthly_sales_df, peak_season_months, peak_dict, spike_months, drop_months
+
+
+def plot_peak_season(monthly_sales_df, spike_months, drop_months):
+    # Visualisasi
+    fig = plt.figure(figsize=(10, 5))
+    plt.plot(monthly_sales_df['month'], monthly_sales_df['count'], marker='o', label='Penjualan')
+    plt.scatter(spike_months, monthly_sales_df[monthly_sales_df['month'].isin(spike_months)]['count'], color='red', label='Lonjakan (Awal Peak)')
+    plt.scatter(drop_months, monthly_sales_df[monthly_sales_df['month'].isin(drop_months)]['count'], color='green', label='Penurunan (Akhir Peak)')
+    plt.fill_between(monthly_sales_df['month'], monthly_sales_df['count'], where=(monthly_sales_df['month'].isin(peak_season_months)), color='orange', alpha=0.3, label='Peak Season')
+    plt.title('Identifikasi Peak Season Berdasarkan Lonjakan Signifikan')
+    plt.xlabel('Bulan')
+    plt.ylabel('Jumlah Penjualan')
+    plt.legend()
+    plt.grid(True)
+    st.pyplot(fig)
+    # st.write(f"Bulan Peak Season: {peak_season_months[0]} - {peak_season_months[-1]}")
+    
 # -------------------------------
 # Fungsi untuk Analisis Tren Bulanan
 # -------------------------------
@@ -151,7 +209,7 @@ def plot_monthly_analysis():
 # -------------------------------
 # Load Data
 # -------------------------------
-data = pd.read_csv("https://raw.githubusercontent.com/syafiqirz/Bike-Sharing/refs/heads/main/dashboard/sales_data.csv")
+data = pd.read_csv("../sales_data.csv")
 data = load_data(data)
 today = pd.Timestamp("2013-01-01")
 
@@ -159,32 +217,33 @@ today = pd.Timestamp("2013-01-01")
 # Sidebar: Filter dan Pilihan Analisis
 # -------------------------------
 st.sidebar.header("Filter Data")
-analysis_option = st.sidebar.radio("Pilih Analisis", ("Overview Data", "Analisis per Jam", "Tren Bulanan"))
+analysis_option = st.sidebar.radio("Pilih Analisis", ("Overview Data", "Analisis per Jam", "Tren Bulanan", "Peak Season"))
 
 # -------------------------------
 # Header
 # -------------------------------
-st.header('Dashboar Penyewaan Sepeda :sparkles:')
+st.header('Dashboard Penyewaan Sepeda :sparkles:')
 st.caption("Last updated: 1 January 2013")
-st.subheader('Total Penyewaan')
-
-col1, col2 = st.columns(2)
-
-with col1:
-    total_sales = data["count"].sum()
-    st.metric("Total Sales", value=total_sales)
-
-with col2:
-    last_30_days = data[data["dateday"] >= today - pd.DateOffset(days=30)]["count"].mean()
-    prev_30_days = data[(data["dateday"] >= today - pd.DateOffset(days=60)) & (data["dateday"] < today - pd.DateOffset(days=30))]["count"].mean()
-    delta_percentage = ((last_30_days - prev_30_days) / prev_30_days) * 100
-    st.metric("Average Sales in Last 30 Days", value=f"{last_30_days:.0f}", delta=f"{delta_percentage:.2f}%")
 
 # -------------------------------
 # Overview Data
 # -------------------------------
 if analysis_option == "Overview Data":
     st.header("Overview Data")
+    st.subheader('Total Penyewaan')
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        total_sales = data["count"].sum()
+        st.metric("Total Sales", value=total_sales)
+
+    with col2:
+        last_30_days = data[data["dateday"] >= today - pd.DateOffset(days=30)]["count"].mean()
+        prev_30_days = data[(data["dateday"] >= today - pd.DateOffset(days=60)) & (data["dateday"] < today - pd.DateOffset(days=30))]["count"].mean()
+        delta_percentage = ((last_30_days - prev_30_days) / prev_30_days) * 100
+        st.metric("Average Sales in Last 30 Days", value=f"{last_30_days:.0f}", delta=f"{delta_percentage:.2f}%")
+    
     tab1, tab2, tab3 = st.tabs(["Tren Penjualan", "Registered Users", "Casual Users"])
     
     with tab1:
@@ -211,5 +270,28 @@ if analysis_option == "Tren Bulanan":
     timeframe = st.sidebar.selectbox("Pilih Rentang Waktu", ["Keseluruhan", "1 Tahun Terakhir", "6 Bulan Terakhir", "3 Bulan Terakhir", "1 Bulan Terakhir", "1 Minggu Terakhir", "3 Hari Terakhir", "Custom"])
     plot_monthly_analysis()
 
+# -------------------------------
+# Analisis Peak Season
+# -------------------------------
+if analysis_option == "Peak Season":
+    monthly_sales_df, peak_season_months, peak_dict, spike_months, drop_months = peak_season()
+    if(peak_season_months): 
+        start_month = peak_dict["start_month"]
+        end_month = peak_dict["end_month"]
+        start_pct = peak_dict["start_pct"]
+        end_pct = peak_dict["end_pct"]
+        
+        st.subheader(f"Peak Season terjadi antara bulan {start_month} hingga {end_month}*")
+        st.write("*Data yang ditampilkan telah diolah. Hasil grafik ini menunjukkan pola peak season yang terjadi selama 2011-2012")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Start Peak", value=start_month, delta=f"{start_pct:.2f}%")
+        with col2:
+            st.metric("End Peak", value=end_month, delta=f"{end_pct:.2f}%")
+        
+    plot_peak_season(monthly_sales_df, spike_months, drop_months)
+    
 st.markdown("---")
 st.caption("**Developed by Muhammad Syafiq Irzaky | Contact: syafiqirzaky@gmail.com | GitHub: (https://github.com/syafiqirz)**")
