@@ -152,7 +152,7 @@ def plot_monthly_analysis():
 # -------------------------------
 # Load Data
 # -------------------------------
-data = load_data("sales_data.csv")
+data = load_data("./sales_data.csv")
 today = pd.Timestamp("2013-01-01")
 
 # -------------------------------
