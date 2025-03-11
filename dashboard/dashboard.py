@@ -84,6 +84,9 @@ def filter_timeframe(data, timeframe, today):
     else:
         return data.copy()
 
+# -------------------------------
+# Fungsi untuk Mengolah data Peak Season
+# -------------------------------
 def peak_season():
     data['dateday'] = pd.to_datetime(data['dateday'])
     order = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -126,7 +129,9 @@ def peak_season():
     
     return monthly_sales_df, peak_season_months, peak_dict, spike_months, drop_months
 
-
+# -------------------------------
+# Fungsi untuk Menampilkan Grafik Peak Season
+# -------------------------------
 def plot_peak_season(monthly_sales_df, spike_months, drop_months):
     # Visualisasi
     fig = plt.figure(figsize=(10, 5))
